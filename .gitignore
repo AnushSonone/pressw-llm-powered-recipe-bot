@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+.venv/
+env/
+.env
+.env.local
+.env.*.local
+
+# Build / output
+.next/
+out/
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs / debug
+*.log
+npm-debug.log*
+
+# Testing / coverage
+.coverage
+htmlcov/
+.pytest_cache/
+.nyc_output/
+
+# Misc
+*.tsbuildinfo
+next-env.d.ts
