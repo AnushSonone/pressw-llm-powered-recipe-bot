@@ -1,5 +1,4 @@
 import { z } from "zod";
-import type { components } from "./api-types.generated";
 
 const CookingResponseSchema = z.object({
   refusal: z.string().nullable(),
@@ -7,8 +6,7 @@ const CookingResponseSchema = z.object({
   reasoning_chain: z.array(z.record(z.unknown())).nullable().optional(),
 });
 
-/** Response type; kept in sync with OpenAPI (see lib/api-types.generated.ts). */
-export type CookingResponse = components["schemas"]["CookingResponse"];
+export type CookingResponse = z.infer<typeof CookingResponseSchema>;
 
 /** Backend API base URL. Use port 8000 for local/Docker. */
 function getBaseUrl(): string {

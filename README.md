@@ -6,52 +6,27 @@ Monorepo for the PressW intern technical assessment: **AI-powered recipe chatbot
 
 ```
 .
-├── backend/                    # FastAPI + LangGraph
-│   ├── main.py                 # API entry point, /health, POST /api/cooking, POST /api/cooking/stream
-│   ├── llm.py                  # LangChain chat model (Groq); all LLM access goes through here
-│   ├── graphs/                 # LangGraph nodes and compiled graph
-│   │   ├── state.py            # CookingState TypedDict
-│   │   ├── classify.py         # In-scope vs out-of-scope classification node
-│   │   ├── refusal.py          # Out-of-scope refusal node
-│   │   ├── agent.py            # Cooking Q&A agent node (LLM + tools loop)
-│   │   └── graph.py            # build_cooking_graph(), classify → refusal | agent
-│   ├── tools/                  # Tools used by the agent
-│   │   ├── search.py           # DuckDuckGo web search
-│   │   └── cookware.py         # check_cookware (user equipment list)
-│   ├── schemas/                # Pydantic request/response models
-│   │   └── cooking.py          # CookingRequest, CookingResponse
-│   ├── scripts/
-│   │   └── export_openapi.py   # Export OpenAPI schema to repo root openapi.json
-│   ├── tests/                  # Pytest: refusal, classify, cookware, agent (mocked LLM)
-│   ├── requirements.txt
+├── backend/
+│   ├── main.py           # FastAPI entry point
+│   ├── graphs/           # LangGraph graphs / nodes
+│   ├── tools/            # Search, cookware checker
+│   ├── schemas/          # Pydantic request/response models
 │   ├── Dockerfile
-│   └── pyproject.toml          # Ruff config
-├── frontend/                   # Next.js 15 App Router + TypeScript + Tailwind
-│   ├── app/
-│   │   ├── layout.tsx
-│   │   └── page.tsx            # Chat page (messages, streamCookingMessage)
-│   ├── components/
-│   │   ├── chat/               # ChatLayout, MessageList, MessageBubble, ChatInput, etc.
-│   │   └── ui/                 # Button, Input, ScrollArea (Radix-based)
-│   ├── lib/
-│   │   ├── api.ts              # sendCookingMessage, streamCookingMessage, Zod + generated types
-│   │   ├── api-types.generated.ts   # Generated from openapi.json (npm run generate:api-types)
-│   │   └── utils.ts            # cn() for class names
-│   ├── package.json
+│   └── ...
+├── frontend/
+│   ├── app/              # Next.js App Router routes
+│   ├── components/       # Chat bubbles, input, UI
+│   ├── lib/              # API client, types (zod)
 │   ├── Dockerfile
-│   └── tsconfig.json
-├── openapi.json                # OpenAPI 3.1 schema (regenerate via backend/scripts/export_openapi.py)
-├── docker-compose.yml          # backend + frontend services, healthcheck, env
-├── .env.example
-├── .editorconfig
-├── .prettierrc
-├── .github/workflows/ci.yml    # Backend: Ruff, pytest; frontend: lint, build
-└── README.md
+│   └── ...
+├── docker-compose.yml
+├── README.md
+└── .env.example
 ```
 
 ## Architecture (high-level)
 
-The diagram below summarizes the flow from user message to response; the arrows are the directed edges (client → API → classify → refusal or agent → tools → response).
+The diagram below summarizes the flow from user message to response.
 
 ```mermaid
 flowchart LR
@@ -222,15 +197,15 @@ curl -N -X POST http://localhost:8000/api/cooking/stream \
 
 ```bash
 cd backend
-pip install -r requirements.txt   # or use a venv
-PYTHONPATH=. pytest tests -v
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+PYTHONPATH=. .venv/bin/pytest tests -v
 ```
+
+If you already have a venv, use it: `PYTHONPATH=. .venv/bin/pytest tests -v`. Or activate first (`source .venv/bin/activate`) then `pip install -r requirements.txt` and `PYTHONPATH=. pytest tests -v`.
 
 Tests cover the refusal node, classify node (with mocked LLM), cookware tool, and agent node (with mocked LLM). CI runs these on every push and pull request to `main` (see [.github/workflows/ci.yml](.github/workflows/ci.yml)). The same workflow runs frontend lint and build.
 
 **Code quality:** Backend uses [Ruff](https://docs.astral.sh/ruff/) (config in [backend/pyproject.toml](backend/pyproject.toml)) for PEP 8–style linting and formatting. Frontend uses ESLint (Next.js config) and Prettier (`.prettierrc`). TypeScript is in strict mode.
-
-**OpenAPI and generated TypeScript types:** The backend exposes OpenAPI at `GET /openapi.json` and interactive docs at `GET /docs`. The repo root holds a committed [openapi.json](openapi.json) so the frontend can generate types without running the backend. To regenerate the schema (e.g. after changing API or schemas): from `backend/` run `PYTHONPATH=. python scripts/export_openapi.py`. Then in the frontend run `npm run generate:api-types` to write [frontend/lib/api-types.generated.ts](frontend/lib/api-types.generated.ts). The chat API client uses these types; Zod remains for runtime validation.
 
 ## AWS deployment plan (documentation)
 
@@ -260,12 +235,6 @@ How we would secure the application in production:
 - **LangGraph flow:** Classify → refusal (out-of-scope) or agent (with tools). Agent loops on tool calls until the model returns a final answer. Keeps classification and tool use explicit and debuggable.
 - **Frontend:** Next.js 15 App Router, TypeScript, Tailwind, modular chat components. Chat UI uses the streaming endpoint (`POST /api/cooking/stream`); the backend currently sends one SSE event when the graph completes.
 - **AI tooling used during development:** Cursor/IDE assistance for implementation and README structure.
-
-## Prompt versioning and evaluation
-
-Current prompts are treated as **v1** and live in code: [backend/graphs/classify.py](backend/graphs/classify.py) (`CLASSIFY_SYSTEM`) and [backend/graphs/agent.py](backend/graphs/agent.py) (`AGENT_SYSTEM`). When changing them, we’d bump a version (e.g. in a comment or a small `prompts.yaml`) and note the change in a short changelog so we can correlate behavior with prompt edits.
-
-**Evaluation (what we’d measure):** (1) **Refusal accuracy** — fraction of out-of-scope queries that get a refusal vs. an answer; (2) **Recipe relevance** — user feedback or heuristics (e.g. presence of steps/ingredients) for in-scope answers; (3) **Tool usage** — how often search and check_cookware are called and whether they improve answers. We’d log these in the reasoning chain (or a separate analytics pipeline) and periodically review or A/B test prompt changes.
 
 ## Timeboxing notes / trade-offs & next steps
 
@@ -298,7 +267,6 @@ How we would add ELT to feed recipe-related decisions into analytics:
 - Part 4 (documentation): README includes AWS deployment plan, Auth & security plan, Design decisions & AI tooling, Timeboxing notes, ELT integration (bonus), and edge cases.
 - Part 5: Backend unit tests (refusal, classify, cookware, agent); GitHub Actions CI (backend pytest, frontend lint + build); README Testing section.
 - Part 6: Chat UI uses the streaming endpoint (`POST /api/cooking/stream`); retry uses the same path.
-- Nice-to-haves: OpenAPI schema export and generated TS types (openapi.json, `npm run generate:api-types`); prompt versioning and evaluation notes in README; copy-to-clipboard on assistant messages.
 
 ## License
 

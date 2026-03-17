@@ -36,6 +36,9 @@ htmlcov/
 .pytest_cache/
 .nyc_output/
 
+# Ruff (lint/format cache)
+.ruff_cache/
+
 # Misc
 *.tsbuildinfo
 next-env.d.ts

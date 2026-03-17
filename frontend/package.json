@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "generate:api-types": "openapi-typescript ../openapi.json -o lib/api-types.generated.ts"
+    "lint": "next lint"
   },
   "dependencies": {
     "next": "^15.0.0",
@@ -21,7 +20,6 @@
     "@radix-ui/react-scroll-area": "^1.2.0"
   },
   "devDependencies": {
-    "openapi-typescript": "^7.0.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
