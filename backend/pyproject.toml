@@ -1,0 +1,22 @@
+[project]
+name = "pressw-backend"
+version = "0.1.0"
+description = "LLM-powered cooking & recipe Q&A API"
+requires-python = ">=3.11"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+exclude = [".venv", "__pycache__", ".pytest_cache"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = []
+[tool.ruff.lint.per-file-ignores]
+"main.py" = ["E402"]
+"graphs/agent.py" = ["E501"]
+"graphs/classify.py" = ["E501"]
+"graphs/graph.py" = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
